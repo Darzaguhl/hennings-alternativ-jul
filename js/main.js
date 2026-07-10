@@ -14,3 +14,14 @@ mainNav.querySelectorAll('a').forEach((link) => {
     navToggle.setAttribute('aria-expanded', 'false');
   });
 });
+
+// Placeholder handler: no email service is connected yet.
+// Replace with a real submit (Mailchimp/Substack/etc.) once one is chosen.
+const newsletterForm = document.getElementById('newsletter-form');
+const newsletterStatus = document.getElementById('newsletter-status');
+
+newsletterForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  newsletterStatus.textContent = 'Takk! (Nyhetsbrevet er ikke koblet til en e-posttjeneste ennå.)';
+  newsletterForm.reset();
+});
