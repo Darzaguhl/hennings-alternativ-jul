@@ -120,9 +120,10 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; line-height: 1.
   gap: 10px;
 }
 .logo-mark {
-  width: 30px;
-  height: 30px;
-  color: var(--gold-500);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
   flex-shrink: 0;
 }
 .logo-text {
@@ -473,6 +474,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; line-height: 1.
   padding-bottom: 40px;
   border-bottom: 1px solid rgba(250,246,239,0.12);
 }
+.footer-logo { display: flex; align-items: center; gap: 10px; }
 .footer-brand .logo-text { color: var(--cream-50); }
 .footer-brand p { margin-top: 10px; max-width: 320px; font-size: 0.88rem; }
 .footer-nav { display: flex; gap: 22px; flex-wrap: wrap; }
