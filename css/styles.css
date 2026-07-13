@@ -107,6 +107,10 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; line-height: 1.
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--cream-200);
 }
+/* Offsets anchor-jump targets so the sticky header doesn't cover them */
+section[id] {
+  scroll-margin-top: 90px;
+}
 .header-inner {
   display: flex;
   align-items: center;
