@@ -373,6 +373,96 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; line-height: 1.
 .stat-number.big { font-size: 3rem; }
 .volunteer-stat .stat-label { color: rgba(250,246,239,0.8); margin-top: 8px; }
 
+.signup-card {
+  margin-top: 56px;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  box-shadow: var(--shadow-md);
+  max-width: 720px;
+}
+.signup-card h3 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--green-900);
+  margin-bottom: 10px;
+}
+.signup-intro { color: var(--ink-600); margin-bottom: 24px; }
+.signup-loading, .signup-empty { color: var(--ink-400); font-size: 0.95rem; }
+.signup-error { color: var(--red-600); font-size: 0.95rem; }
+
+.signup-oppgaver { display: grid; gap: 12px; margin-bottom: 28px; }
+.oppgave-option {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px 18px;
+  border: 1.5px solid var(--cream-200);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.oppgave-option:hover { border-color: var(--gold-500); background: var(--cream-50); }
+.oppgave-option input[type="checkbox"] { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--green-700); flex-shrink: 0; }
+.oppgave-option-disabled { opacity: 0.55; cursor: not-allowed; }
+.oppgave-option-disabled:hover { border-color: var(--cream-200); background: none; }
+.oppgave-option-body { flex: 1; }
+.oppgave-option-title {
+  font-weight: 600;
+  color: var(--green-900);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.oppgave-option-meta { font-size: 0.88rem; color: var(--ink-600); margin-top: 4px; }
+.badge-critical, .badge-full {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+.badge-critical { background: #fee2e2; color: #b91c1c; }
+.badge-full { background: var(--cream-200); color: var(--ink-600); }
+
+.oppgave-experience {
+  margin-top: 12px;
+  padding: 14px;
+  background: var(--cream-50);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--cream-200);
+}
+.oppgave-experience-question { font-size: 0.88rem; font-weight: 600; color: var(--green-900); margin-bottom: 8px; }
+.oppgave-experience-option { display: inline-flex; align-items: center; gap: 6px; margin-right: 18px; font-size: 0.9rem; color: var(--ink-700); }
+.oppgave-experience-notes {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--cream-200);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  min-height: 60px;
+  resize: vertical;
+}
+
+.signup-fields { display: grid; gap: 18px; margin-bottom: 24px; }
+.signup-field { display: grid; gap: 6px; }
+.signup-label { font-size: 0.9rem; font-weight: 600; color: var(--green-900); }
+.signup-input {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--cream-200);
+  font-family: var(--font-body);
+  font-size: 1rem;
+}
+.signup-input:focus { outline: none; border-color: var(--gold-500); }
+.signup-hint { font-size: 0.8rem; color: var(--ink-400); }
+.signup-status { margin-top: 14px; font-size: 0.92rem; color: var(--green-700); font-weight: 500; }
+
 /* ========== Sponsors ========== */
 .sponsors { padding: 100px 0; background: var(--cream-100); }
 .sponsors h2 { font-size: clamp(1.8rem, 3vw, 2.4rem); margin: 14px auto 16px; }

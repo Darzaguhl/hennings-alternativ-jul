@@ -194,14 +194,39 @@
           <li>Helse &amp; omsorg</li>
           <li>Gaveinnpakking</li>
         </ul>
-        <div class="hero-actions">
-          <a href="#" class="btn btn-primary">Meld deg som frivillig</a>
-          <a href="#" class="btn btn-text">Se ledige vakter →</a>
-        </div>
       </div>
       <div class="volunteer-stat">
         <span class="stat-number big">1 065</span>
         <span class="stat-label">frivillige verter i 2025 alene</span>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="signup-card" id="signup-card">
+        <h3>Meld deg på som frivillig</h3>
+        <p class="signup-intro">Velg hvilke oppgaver du kan tenke deg. Du kan velge flere — vi finner den som passer best.</p>
+
+        <div id="signup-loading" class="signup-loading">Laster oppgaver …</div>
+        <p id="signup-error" class="signup-error" hidden></p>
+
+        <form id="signup-form" hidden>
+          <div id="signup-oppgaver" class="signup-oppgaver"></div>
+
+          <div class="signup-fields">
+            <div class="signup-field">
+              <label class="signup-label" for="signup-email">E-post</label>
+              <input class="signup-input" type="email" id="signup-email" required autocomplete="email">
+            </div>
+            <div class="signup-field">
+              <label class="signup-label" for="signup-password">Passord</label>
+              <input class="signup-input" type="password" id="signup-password" required minlength="8" autocomplete="new-password">
+              <span class="signup-hint">Minst 8 tegn. Du bruker denne til å logge inn i appen.</span>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="signup-submit">Meld deg på</button>
+          <p class="signup-status" id="signup-status" role="status" aria-live="polite"></p>
+        </form>
       </div>
     </div>
   </section>
@@ -321,6 +346,8 @@
   </div>
 </footer>
 
+<script src="js/config.js"></script>
 <script src="js/main.js"></script>
+<script src="js/signup.js"></script>
 </body>
 </html>
