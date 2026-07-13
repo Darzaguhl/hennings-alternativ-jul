@@ -336,6 +336,50 @@ section[id] {
 .offer-card h3 { font-size: 1.15rem; margin-bottom: 8px; }
 .offer-card p { color: var(--ink-600); font-size: 0.95rem; }
 
+/* ========== Vakter (shift schedule) ========== */
+.vakter { padding: 100px 0; background: var(--cream-100); }
+.vakt-groups {
+  display: grid;
+  gap: 32px;
+  margin-top: 8px;
+}
+.vakt-group {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 24px 28px;
+}
+.vakt-group h3 {
+  font-size: 1.05rem;
+  color: var(--green-800);
+  margin-bottom: 14px;
+}
+.vakt-list { display: grid; gap: 12px; }
+.vakt-list li {
+  display: grid;
+  grid-template-columns: 110px 190px 1fr;
+  gap: 14px;
+  align-items: baseline;
+  font-size: 0.92rem;
+}
+.vakt-label { font-weight: 600; color: var(--ink-900); }
+.vakt-time { color: var(--gold-600); font-variant-numeric: tabular-nums; }
+.vakt-desc { color: var(--ink-600); }
+.vakt-note {
+  margin-top: 32px;
+  color: var(--ink-600);
+  font-size: 0.95rem;
+  max-width: 720px;
+}
+.vakt-note strong { color: var(--ink-900); }
+
+@media (max-width: 720px) {
+  .vakt-list li {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
 /* ========== Volunteer ========== */
 .volunteer { padding: 100px 0; }
 .volunteer-inner {
@@ -366,6 +410,7 @@ section[id] {
   border-radius: 50%;
   background: var(--gold-500);
 }
+.role-note { color: var(--ink-400); font-size: 0.85em; }
 .volunteer-stat {
   background: linear-gradient(150deg, var(--green-700), var(--green-900));
   color: var(--cream-50);
