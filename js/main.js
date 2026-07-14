@@ -1,4 +1,5 @@
 document.getElementById('year').textContent = new Date().getFullYear();
+document.getElementById('admin-link').href = window.ADMIN_URL;
 
 const navToggle = document.getElementById('nav-toggle');
 const mainNav = document.getElementById('main-nav');
