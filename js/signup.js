@@ -1,7 +1,7 @@
 // Volunteer signup form (#frivillig): fetches the current event's vakter
 // (shifts) and oppgaver (roles) from the public API, lets a visitor pick
-// one or more of each, register with email+password, and sign up for the
-// chosen vakter in one go.
+// one or more of each, register with just an email, and sign up for the
+// chosen vakter in one go. No password -- volunteers don't need one.
 //
 // API base URL comes from js/config.js (window.API_BASE_URL), which Render
 // generates per-environment at deploy time — see the Build Command in the
@@ -180,7 +180,6 @@ formEl.addEventListener("submit", async (event) => {
   );
 
   const email = document.getElementById("signup-email").value.trim();
-  const password = document.getElementById("signup-password").value;
 
   const signups = selectedShiftBoxes.map((checkbox) => {
     const shiftId = checkbox.value;
@@ -206,12 +205,12 @@ formEl.addEventListener("submit", async (event) => {
     const registerResponse = await fetch(`${API_BASE_URL}/api/register/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, skill_ids: selectedSkillIds }),
+      body: JSON.stringify({ email, skill_ids: selectedSkillIds }),
     });
     const registerBody = await registerResponse.json().catch(() => ({}));
 
     if (!registerResponse.ok) {
-      const detail = registerBody?.email?.[0] || registerBody?.password?.[0] || registerBody?.detail;
+      const detail = registerBody?.email?.[0] || registerBody?.detail;
       throw new Error(detail || "Kunne ikke opprette bruker.");
     }
 
