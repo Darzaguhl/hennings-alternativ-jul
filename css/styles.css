@@ -256,6 +256,7 @@ section[id] {
 .about-copy h2 { font-size: clamp(1.8rem, 3vw, 2.4rem); margin: 14px 0 22px; }
 .about-copy p { color: var(--ink-700); margin-bottom: 16px; max-width: 620px; }
 .about-copy p:last-child { margin-bottom: 0; }
+.about-registration { font-size: 0.85rem; color: var(--ink-400); }
 
 .sr-only {
   position: absolute;
