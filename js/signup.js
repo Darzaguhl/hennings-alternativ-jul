@@ -111,15 +111,34 @@ const renderOppgaver = (skills) => {
     return;
   }
   oppgaverEl.innerHTML = skills
-    .map(
-      (skill) => `
-        <label class="oppgave-chip">
-          <input type="checkbox" value="${skill.id}">
+    .map((skill) => {
+      const isFlexible = /^fleksibel\b/i.test(skill.name);
+      return `
+        <label class="oppgave-chip" ${isFlexible ? 'data-flexible="true"' : ""}>
+          <input type="checkbox" value="${skill.id}" ${isFlexible ? 'id="oppgave-flexible"' : ""}>
           <span>${skill.name}</span>
         </label>
-      `
-    )
+      `;
+    })
     .join("");
+
+  // Picking "Fleksibel" means you're happy to help wherever needed, so the
+  // specific role choices below it stop being meaningful — grey them out
+  // rather than leave a confusing mix of a flexible pick plus specifics.
+  const flexibleBox = document.getElementById("oppgave-flexible");
+  if (flexibleBox) {
+    const otherChips = Array.from(oppgaverEl.querySelectorAll(".oppgave-chip")).filter(
+      (chip) => chip.dataset.flexible !== "true"
+    );
+    flexibleBox.addEventListener("change", () => {
+      otherChips.forEach((chip) => {
+        const checkbox = chip.querySelector('input[type="checkbox"]');
+        checkbox.checked = false;
+        checkbox.disabled = flexibleBox.checked;
+        chip.classList.toggle("oppgave-chip-disabled", flexibleBox.checked);
+      });
+    });
+  }
 };
 
 const loadEvent = async () => {
