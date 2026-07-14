@@ -1,6 +1,7 @@
-// Volunteer signup form (#frivillig): fetches the current event's oppgaver
-// from the public API, lets a visitor pick one or more, register with
-// email+password, and sign up for each chosen oppgave in one go.
+// Volunteer signup form (#frivillig): fetches the current event's vakter
+// (shifts) and oppgaver (roles) from the public API, lets a visitor pick
+// one or more of each, register with email+password, and sign up for the
+// chosen vakter in one go.
 //
 // API base URL comes from js/config.js (window.API_BASE_URL), which Render
 // generates per-environment at deploy time — see the Build Command in the
@@ -11,6 +12,7 @@ const API_BASE_URL = window.API_BASE_URL;
 const loadingEl = document.getElementById("signup-loading");
 const errorEl = document.getElementById("signup-error");
 const formEl = document.getElementById("signup-form");
+const vakterEl = document.getElementById("signup-vakter");
 const oppgaverEl = document.getElementById("signup-oppgaver");
 const submitButton = document.getElementById("signup-submit");
 const statusEl = document.getElementById("signup-status");
@@ -22,42 +24,77 @@ const formatDate = (isoDate) => {
   return parsed.toLocaleDateString("no-NO", { day: "numeric", month: "long" });
 };
 
-const renderOppgaver = (shifts) => {
+// Groups shifts by phase to match the informational Vakter section above.
+// Falls back to a catch-all group for dates outside the usual Dec 20-29
+// window, so next year's event still renders sensibly if dates shift.
+const VAKT_PHASES = [
+  { label: "Oppsett", from: 20, to: 22 },
+  { label: "Siste innspurt", from: 23, to: 23 },
+  { label: "Julaften", from: 24, to: 24 },
+  { label: "Juledagene", from: 25, to: 26 },
+  { label: "Rydding & tilbakelevering", from: 27, to: 29 },
+];
+
+const phaseForShift = (shift) => {
+  const day = Number(shift.date.split("-")[2]);
+  const phase = VAKT_PHASES.find((p) => day >= p.from && day <= p.to);
+  return phase ? phase.label : "Andre vakter";
+};
+
+const shiftOptionHTML = (shift) => {
+  const disabled = shift.is_full;
+  return `
+    <label class="oppgave-option ${disabled ? "oppgave-option-disabled" : ""}" data-shift-id="${shift.id}">
+      <input type="checkbox" value="${shift.id}" data-critical="${shift.is_critical}" ${disabled ? "disabled" : ""}>
+      <div class="oppgave-option-body">
+        <div class="oppgave-option-title">
+          ${shift.title}
+          ${shift.is_critical ? '<span class="badge-critical">Krever erfaring</span>' : ""}
+          ${disabled ? '<span class="badge-full">Fullt</span>' : ""}
+        </div>
+        <div class="oppgave-option-meta">${formatDate(shift.date)} · ${formatTimeRange(shift)}</div>
+        ${
+          shift.is_critical
+            ? `<div class="oppgave-experience" hidden>
+                <p class="oppgave-experience-question">Har du relevant erfaring eller utdanning?</p>
+                <label class="oppgave-experience-option"><input type="radio" name="exp-${shift.id}" value="yes"> Ja</label>
+                <label class="oppgave-experience-option"><input type="radio" name="exp-${shift.id}" value="no"> Nei</label>
+                <textarea class="oppgave-experience-notes" placeholder="Fortell kort om erfaringen din (valgfritt)"></textarea>
+              </div>`
+            : ""
+        }
+      </div>
+    </label>
+  `;
+};
+
+const renderVakter = (shifts) => {
   if (!shifts.length) {
-    oppgaverEl.innerHTML = '<p class="signup-empty">Ingen oppgaver er lagt ut ennå — sjekk tilbake snart.</p>';
+    vakterEl.innerHTML = '<p class="signup-empty">Ingen vakter er lagt ut ennå — sjekk tilbake snart.</p>';
     return;
   }
 
-  oppgaverEl.innerHTML = shifts
-    .map((shift) => {
-      const disabled = shift.is_full;
-      return `
-        <label class="oppgave-option ${disabled ? "oppgave-option-disabled" : ""}" data-shift-id="${shift.id}">
-          <input type="checkbox" value="${shift.id}" data-critical="${shift.is_critical}" ${disabled ? "disabled" : ""}>
-          <div class="oppgave-option-body">
-            <div class="oppgave-option-title">
-              ${shift.title}
-              ${shift.is_critical ? '<span class="badge-critical">Krever erfaring</span>' : ""}
-              ${disabled ? '<span class="badge-full">Fullt</span>' : ""}
-            </div>
-            <div class="oppgave-option-meta">${formatDate(shift.date)} · ${formatTimeRange(shift)}</div>
-            ${
-              shift.is_critical
-                ? `<div class="oppgave-experience" hidden>
-                    <p class="oppgave-experience-question">Har du relevant erfaring eller utdanning?</p>
-                    <label class="oppgave-experience-option"><input type="radio" name="exp-${shift.id}" value="yes"> Ja</label>
-                    <label class="oppgave-experience-option"><input type="radio" name="exp-${shift.id}" value="no"> Nei</label>
-                    <textarea class="oppgave-experience-notes" placeholder="Fortell kort om erfaringen din (valgfritt)"></textarea>
-                  </div>`
-                : ""
-            }
-          </div>
-        </label>
-      `;
-    })
+  const groups = new Map();
+  shifts.forEach((shift) => {
+    const label = phaseForShift(shift);
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label).push(shift);
+  });
+
+  vakterEl.innerHTML = VAKT_PHASES.map((p) => p.label)
+    .concat(groups.has("Andre vakter") ? ["Andre vakter"] : [])
+    .filter((label) => groups.has(label))
+    .map(
+      (label) => `
+        <div class="signup-vakt-group">
+          <h5 class="signup-vakt-group-title">${label}</h5>
+          <div class="signup-vakt-options">${groups.get(label).map(shiftOptionHTML).join("")}</div>
+        </div>
+      `
+    )
     .join("");
 
-  oppgaverEl.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+  vakterEl.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
     checkbox.addEventListener("change", () => {
       const option = checkbox.closest(".oppgave-option");
       const experiencePanel = option.querySelector(".oppgave-experience");
@@ -68,19 +105,42 @@ const renderOppgaver = (shifts) => {
   });
 };
 
+const renderOppgaver = (skills) => {
+  if (!skills.length) {
+    oppgaverEl.innerHTML = "";
+    return;
+  }
+  oppgaverEl.innerHTML = skills
+    .map(
+      (skill) => `
+        <label class="oppgave-chip">
+          <input type="checkbox" value="${skill.id}">
+          <span>${skill.name}</span>
+        </label>
+      `
+    )
+    .join("");
+};
+
 const loadEvent = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/public/event/`);
-    if (!response.ok) throw new Error(`status ${response.status}`);
-    const event = await response.json();
-    renderOppgaver(event.shifts || []);
+    const [eventResponse, skillsResponse] = await Promise.all([
+      fetch(`${API_BASE_URL}/api/public/event/`),
+      fetch(`${API_BASE_URL}/api/public/skills/`),
+    ]);
+    if (!eventResponse.ok) throw new Error(`event status ${eventResponse.status}`);
+    const event = await eventResponse.json();
+    const skills = skillsResponse.ok ? await skillsResponse.json() : [];
+
+    renderVakter(event.shifts || []);
+    renderOppgaver(skills);
     loadingEl.hidden = true;
     formEl.hidden = false;
   } catch (err) {
     console.error("Error loading event", err);
     loadingEl.hidden = true;
     errorEl.hidden = false;
-    errorEl.textContent = "Kunne ikke laste oppgaver akkurat nå. Prøv å laste siden på nytt.";
+    errorEl.textContent = "Kunne ikke laste vakter og oppgaver akkurat nå. Prøv å laste siden på nytt.";
   }
 };
 
@@ -90,16 +150,20 @@ formEl.addEventListener("submit", async (event) => {
   event.preventDefault();
   statusEl.textContent = "";
 
-  const selectedBoxes = Array.from(oppgaverEl.querySelectorAll('input[type="checkbox"]:checked'));
-  if (!selectedBoxes.length) {
-    statusEl.textContent = "Velg minst én oppgave.";
+  const selectedShiftBoxes = Array.from(vakterEl.querySelectorAll('input[type="checkbox"]:checked'));
+  if (!selectedShiftBoxes.length) {
+    statusEl.textContent = "Velg minst én vakt.";
     return;
   }
+
+  const selectedSkillIds = Array.from(oppgaverEl.querySelectorAll('input[type="checkbox"]:checked')).map(
+    (checkbox) => Number(checkbox.value)
+  );
 
   const email = document.getElementById("signup-email").value.trim();
   const password = document.getElementById("signup-password").value;
 
-  const signups = selectedBoxes.map((checkbox) => {
+  const signups = selectedShiftBoxes.map((checkbox) => {
     const shiftId = checkbox.value;
     const isCritical = checkbox.dataset.critical === "true";
     if (!isCritical) return { shiftId, body: {} };
@@ -123,7 +187,7 @@ formEl.addEventListener("submit", async (event) => {
     const registerResponse = await fetch(`${API_BASE_URL}/api/register/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, skill_ids: selectedSkillIds }),
     });
     const registerBody = await registerResponse.json().catch(() => ({}));
 
@@ -152,11 +216,11 @@ formEl.addEventListener("submit", async (event) => {
     if (failures === 0) {
       statusEl.textContent = "Takk for at du melder deg! Du får beskjed nærmere jul. Last ned appen for å se oppgavene dine.";
       formEl.reset();
-      oppgaverEl.querySelectorAll(".oppgave-experience").forEach((panel) => (panel.hidden = true));
+      vakterEl.querySelectorAll(".oppgave-experience").forEach((panel) => (panel.hidden = true));
     } else if (failures < signups.length) {
-      statusEl.textContent = "Kontoen din ble opprettet, men én eller flere oppgaver kunne ikke registreres (kanskje de ble fulle akkurat nå). Logg inn i appen for å velge på nytt.";
+      statusEl.textContent = "Kontoen din ble opprettet, men én eller flere vakter kunne ikke registreres (kanskje de ble fulle akkurat nå). Logg inn i appen for å velge på nytt.";
     } else {
-      statusEl.textContent = "Kontoen din ble opprettet, men oppgavene kunne ikke registreres. Logg inn i appen for å velge oppgaver.";
+      statusEl.textContent = "Kontoen din ble opprettet, men vaktene kunne ikke registreres. Logg inn i appen for å velge vakter.";
     }
   } catch (err) {
     console.error("Error signing up", err);

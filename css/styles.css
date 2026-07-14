@@ -440,7 +440,46 @@ section[id] {
 .signup-loading, .signup-empty { color: var(--ink-400); font-size: 0.95rem; }
 .signup-error { color: var(--red-600); font-size: 0.95rem; }
 
-.signup-oppgaver { display: grid; gap: 12px; margin-bottom: 28px; }
+.signup-subheading {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--green-900);
+  margin: 28px 0 4px;
+}
+.signup-subhint { color: var(--ink-600); font-size: 0.88rem; margin-bottom: 14px; }
+
+.signup-vakt-groups { display: grid; gap: 22px; margin-bottom: 8px; }
+.signup-vakt-group-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--gold-600);
+  margin-bottom: 10px;
+}
+.signup-vakt-options { display: grid; gap: 12px; }
+
+.signup-oppgave-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px 12px;
+  margin-bottom: 28px;
+}
+.oppgave-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--cream-200);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--ink-700);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.oppgave-chip:hover { border-color: var(--gold-500); background: var(--cream-50); }
+.oppgave-chip input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--green-700); flex-shrink: 0; }
+
 .oppgave-option {
   display: flex;
   gap: 14px;
