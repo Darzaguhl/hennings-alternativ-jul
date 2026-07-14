@@ -11,11 +11,26 @@ const API_BASE_URL = window.API_BASE_URL;
 
 const loadingEl = document.getElementById("signup-loading");
 const errorEl = document.getElementById("signup-error");
+const closedEl = document.getElementById("signup-closed");
 const formEl = document.getElementById("signup-form");
 const vakterEl = document.getElementById("signup-vakter");
 const oppgaverEl = document.getElementById("signup-oppgaver");
 const submitButton = document.getElementById("signup-submit");
 const statusEl = document.getElementById("signup-status");
+
+const formatOpenDate = (isoString) =>
+  new Date(isoString).toLocaleDateString("no-NO", { day: "numeric", month: "long", year: "numeric" });
+
+const signupClosedMessage = (event) => {
+  const now = new Date();
+  if (event.signup_opens_at && now < new Date(event.signup_opens_at)) {
+    return `Påmeldingen åpner ${formatOpenDate(event.signup_opens_at)}. Sjekk tilbake da!`;
+  }
+  if (event.signup_closes_at && now > new Date(event.signup_closes_at)) {
+    return "Påmeldingen er dessverre stengt for i år.";
+  }
+  return "Påmeldingen er ikke åpen akkurat nå.";
+};
 
 const formatTimeRange = (shift) => `${shift.start_time.slice(0, 5)}–${shift.end_time.slice(0, 5)}`;
 const formatDate = (isoDate) => {
@@ -151,9 +166,16 @@ const loadEvent = async () => {
     const event = await eventResponse.json();
     const skills = skillsResponse.ok ? await skillsResponse.json() : [];
 
+    loadingEl.hidden = true;
+
+    if (event.signups_open === false) {
+      closedEl.textContent = signupClosedMessage(event);
+      closedEl.hidden = false;
+      return;
+    }
+
     renderVakter(event.shifts || []);
     renderOppgaver(skills);
-    loadingEl.hidden = true;
     formEl.hidden = false;
   } catch (err) {
     console.error("Error loading event", err);
