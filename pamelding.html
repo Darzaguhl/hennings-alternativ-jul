@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Viktig informasjon om påmelding – Hennings Alternativ Jul</title>
-<meta name="description" content="Les dette før du melder deg på som frivillig vertskap hos Hennings Alternativ Jul: regler for vaktkombinasjoner, ledervakt (X1), parkering og mer.">
+<title>Meld deg på som frivillig – Hennings Alternativ Jul</title>
+<meta name="description" content="Meld deg på som frivillig vertskap hos Hennings Alternativ Jul. Les viktig informasjon om påmelding før du velger vakter og oppgaver.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -25,12 +25,12 @@
 </header>
 
 <main id="main">
-  <div class="container" style="max-width: 760px; margin-top: 56px; margin-bottom: 80px;">
+  <div class="container" style="max-width: 760px; margin-top: 56px;">
     <span class="eyebrow">Påmelding</span>
     <h2>Les dette før du melder deg på</h2>
     <p class="section-lead">
       Påmeldingen er bindende, og vi regner med deg dersom du melder deg på. Les gjennom reglene under —
-      og siden «Vakter» og «Oppgaver» på denne siden — før du fyller ut skjemaet.
+      og sidene «Vakter» og «Oppgaver» på forsiden — før du fyller ut skjemaet nedenfor.
     </p>
 
     <h3>Påmelding er bindende</h3>
@@ -81,10 +81,37 @@
       dagene. Kommer du langveisfra, eller skal du på en ny vakt kort tid etter forrige, finnes det også
       rabatterte hotellmuligheter i nærheten — ta kontakt for nærmere informasjon.
     </p>
+  </div>
 
-    <p style="margin-top: 40px;">
-      <a href="index.html#frivillig" class="btn btn-primary">Tilbake til påmelding</a>
-    </p>
+  <div class="container" style="max-width: 760px; margin-bottom: 80px;">
+    <div class="signup-card" id="signup-card">
+      <h3>Meld deg på som frivillig</h3>
+      <p class="signup-intro">Velg hvilke vakter du kan stille på, og hvilke oppgaver du kan tenke deg. Du kan velge flere av begge deler — vi finner det som passer best.</p>
+
+      <div id="signup-loading" class="signup-loading">Laster vakter og oppgaver …</div>
+      <p id="signup-error" class="signup-error" hidden></p>
+      <p id="signup-closed" class="signup-closed" hidden></p>
+
+      <form id="signup-form" hidden>
+        <h4 class="signup-subheading">Vakter</h4>
+        <div id="signup-vakter" class="signup-vakt-groups"></div>
+
+        <h4 class="signup-subheading">Oppgaver</h4>
+        <p class="signup-subhint">Valgfritt — fortell oss hva du kan tenke deg, så finner vi riktig plass til deg.</p>
+        <div id="signup-oppgaver" class="signup-oppgave-grid"></div>
+
+        <div class="signup-fields">
+          <div class="signup-field">
+            <label class="signup-label" for="signup-email">E-post</label>
+            <input class="signup-input" type="email" id="signup-email" required autocomplete="email">
+            <span class="signup-hint">Vi bruker denne til å holde deg oppdatert om vakten din.</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="signup-submit">Meld deg på</button>
+        <p class="signup-status" id="signup-status" role="status" aria-live="polite"></p>
+      </form>
+    </div>
   </div>
 </main>
 
@@ -94,6 +121,8 @@
   </div>
 </footer>
 
+<script src="js/config.js"></script>
+<script src="js/signup.js"></script>
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 </body>
 </html>
