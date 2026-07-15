@@ -59,23 +59,20 @@ const phaseForShift = (shift) => {
 // Mirrors the backend's signup validation (ShiftViewSet.signup) so an
 // impossible combination greys out live as you check boxes, with a reason,
 // instead of only failing after you submit. Populated once the vakter/
-// oppgaver are rendered -- see renderVakter/renderOppgaver.
+// oppgaver are rendered -- see renderVakter/renderOppgaver/loadEvent.
 let shiftsById = {};
 let orderedShiftIds = [];
 let skillsById = {};
+// [idA, idB] string pairs an admin has declared can't be combined -- not
+// computed from start/end times. An earlier version of this file computed
+// real time overlap instead, which incorrectly also blocked vakt 5+6 and
+// 8+9 (which genuinely overlap but aren't forbidden) -- see the backend's
+// ShiftConflict model docstring for why that's not a rule that generalizes
+// from the two named pairs (vakt 6+7, 9+10).
+let conflictPairs = [];
 
-const shiftRange = (shift) => {
-  const start = new Date(`${shift.date}T${shift.start_time}`);
-  const endSameDay = new Date(`${shift.date}T${shift.end_time}`);
-  const end = endSameDay > start ? endSameDay : new Date(endSameDay.getTime() + 24 * 60 * 60 * 1000);
-  return [start, end];
-};
-
-const shiftsOverlap = (a, b) => {
-  const [aStart, aEnd] = shiftRange(a);
-  const [bStart, bEnd] = shiftRange(b);
-  return aStart < bEnd && bStart < aEnd;
-};
+const shiftsConflict = (idA, idB) =>
+  conflictPairs.some(([a, b]) => (a === idA && b === idB) || (a === idB && b === idA));
 
 const wouldCompleteThreeConsecutive = (candidateId, checkedIds) => {
   const index = orderedShiftIds.indexOf(candidateId);
@@ -132,8 +129,8 @@ const updateVaktAvailability = () => {
     }
 
     let reason = null;
-    if ([...checkedVaktIds].some((id) => shiftsOverlap(shift, shiftsById[id]))) {
-      reason = "Overlapper med en valgt vakt.";
+    if ([...checkedVaktIds].some((id) => shiftsConflict(checkbox.value, id))) {
+      reason = "Kan ikke kombineres med en valgt vakt.";
     } else if (wouldCompleteThreeConsecutive(checkbox.value, checkedVaktIds)) {
       reason = "Ville gitt tre vakter på rad.";
     } else if (allowedPhases && shift.phase && !allowedPhases.has(shift.phase)) {
@@ -390,6 +387,7 @@ const loadEvent = async () => {
       return;
     }
 
+    conflictPairs = (event.conflicts || []).map((c) => [String(c.shift_a), String(c.shift_b)]);
     renderVakter(event.shifts || []);
     renderOppgaver(skills);
     formEl.hidden = false;
