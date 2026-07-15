@@ -189,6 +189,18 @@ const renderVakter = (shifts) => {
   });
 };
 
+// Skill carries which vakt phases it applies to (set by an admin on the
+// Oppgaver page) -- derive the hint from that instead of hardcoding text,
+// so it can't drift out of sync with what's actually configured. All
+// three (or none, before an admin has curated it) means unrestricted, so
+// no hint is shown.
+const PHASE_LABELS = { allowed_in_setup: "forberedelse", allowed_in_guest: "vakter med gjester", allowed_in_teardown: "rydding" };
+const phaseHint = (skill) => {
+  const allowed = Object.keys(PHASE_LABELS).filter((field) => skill[field]);
+  if (allowed.length === 0 || allowed.length === Object.keys(PHASE_LABELS).length) return null;
+  return `kun ${allowed.map((field) => PHASE_LABELS[field]).join(" og ")}`;
+};
+
 const renderOppgaver = (skills) => {
   oppgaverEl.innerHTML = "";
   if (!skills.length) return;
@@ -208,6 +220,13 @@ const renderOppgaver = (skills) => {
 
     const span = document.createElement("span");
     span.textContent = skill.name;
+    const hint = phaseHint(skill);
+    if (hint) {
+      const hintEl = document.createElement("span");
+      hintEl.className = "oppgave-chip-hint";
+      hintEl.textContent = ` (${hint})`;
+      span.appendChild(hintEl);
+    }
     chip.appendChild(span);
 
     oppgaverEl.appendChild(chip);
@@ -314,29 +333,42 @@ formEl.addEventListener("submit", async (event) => {
 
     const accessToken = registerBody.access;
 
-    const results = await Promise.all(
-      signups.map(({ shiftId, body }) =>
-        fetch(`${API_BASE_URL}/api/shifts/${shiftId}/signup/`, {
+    // Sequential, not Promise.all: the backend rejects a vakt that would
+    // overlap or complete a run of 3 consecutive vakter *already signed up
+    // for* -- submitting in parallel means two vakter in the same batch
+    // might each see the other as "not yet signed up" and both pass a
+    // check that should have caught their combination. Awaiting each one
+    // in turn means every request sees the prior ones in this same
+    // submission as already persisted, so the checks apply correctly.
+    const signupResults = [];
+    for (const { shiftId, body } of signups) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/shifts/${shiftId}/signup/`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify(body),
-        })
-      )
-    );
+        });
+        const resBody = await res.json().catch(() => ({}));
+        signupResults.push({ ok: res.ok, detail: resBody?.detail });
+      } catch (err) {
+        signupResults.push({ ok: false, detail: null });
+      }
+    }
 
-    const failures = results.filter((r) => !r.ok).length;
+    const failures = signupResults.filter((r) => !r.ok);
+    const reasons = failures.map((f) => f.detail).filter(Boolean).join(" ");
 
-    if (failures === 0) {
+    if (failures.length === 0) {
       statusEl.textContent = "Takk for at du melder deg! Sjekk e-posten din for en lenke til å sette et passord, så kan du logge inn i appen og se oppgavene dine. Du får også beskjed nærmere jul.";
       formEl.reset();
       vakterEl.querySelectorAll(".oppgave-experience").forEach((panel) => (panel.hidden = true));
-    } else if (failures < signups.length) {
-      statusEl.textContent = "Kontoen din ble opprettet, men én eller flere vakter kunne ikke registreres (kanskje de ble fulle akkurat nå). Logg inn i appen for å velge på nytt.";
+    } else if (failures.length < signups.length) {
+      statusEl.textContent = `Kontoen din ble opprettet, men ${failures.length} av ${signups.length} vakter kunne ikke registreres. ${reasons} Logg inn i appen for å velge på nytt.`;
     } else {
-      statusEl.textContent = "Kontoen din ble opprettet, men vaktene kunne ikke registreres. Logg inn i appen for å velge vakter.";
+      statusEl.textContent = `Kontoen din ble opprettet, men vaktene kunne ikke registreres. ${reasons} Logg inn i appen for å velge vakter.`;
     }
   } catch (err) {
     console.error("Error signing up", err);
