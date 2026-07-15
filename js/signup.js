@@ -56,36 +56,98 @@ const phaseForShift = (shift) => {
   return phase ? phase.label : "Andre vakter";
 };
 
-const shiftOptionHTML = (shift) => {
+// Builds real DOM nodes rather than an HTML string -- shift.title comes
+// from whoever has admin access on the event, and interpolating it into
+// innerHTML would make a compromised/phished admin account a stored-XSS
+// vector against every visitor to this public page. textContent/append
+// with a string always inserts a text node, never markup.
+const shiftOptionEl = (shift) => {
   const disabled = shift.is_full;
-  return `
-    <label class="oppgave-option ${disabled ? "oppgave-option-disabled" : ""}" data-shift-id="${shift.id}">
-      <input type="checkbox" value="${shift.id}" data-critical="${shift.is_critical}" ${disabled ? "disabled" : ""}>
-      <div class="oppgave-option-body">
-        <div class="oppgave-option-title">
-          ${shift.title}
-          ${shift.is_critical ? '<span class="badge-critical">Krever erfaring</span>' : ""}
-          ${disabled ? '<span class="badge-full">Fullt</span>' : ""}
-        </div>
-        <div class="oppgave-option-meta">${formatDate(shift.date)} · ${formatTimeRange(shift)}</div>
-        ${
-          shift.is_critical
-            ? `<div class="oppgave-experience" hidden>
-                <p class="oppgave-experience-question">Har du relevant erfaring eller utdanning?</p>
-                <label class="oppgave-experience-option"><input type="radio" name="exp-${shift.id}" value="yes"> Ja</label>
-                <label class="oppgave-experience-option"><input type="radio" name="exp-${shift.id}" value="no"> Nei</label>
-                <textarea class="oppgave-experience-notes" placeholder="Fortell kort om erfaringen din (valgfritt)"></textarea>
-              </div>`
-            : ""
-        }
-      </div>
-    </label>
-  `;
+
+  const label = document.createElement("label");
+  label.className = disabled ? "oppgave-option oppgave-option-disabled" : "oppgave-option";
+  label.dataset.shiftId = shift.id;
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.value = shift.id;
+  checkbox.dataset.critical = shift.is_critical;
+  checkbox.disabled = disabled;
+  label.appendChild(checkbox);
+
+  const body = document.createElement("div");
+  body.className = "oppgave-option-body";
+
+  const titleRow = document.createElement("div");
+  titleRow.className = "oppgave-option-title";
+  titleRow.append(shift.title);
+  if (shift.is_critical) {
+    const badge = document.createElement("span");
+    badge.className = "badge-critical";
+    badge.textContent = "Krever erfaring";
+    titleRow.appendChild(badge);
+  }
+  if (disabled) {
+    const fullBadge = document.createElement("span");
+    fullBadge.className = "badge-full";
+    fullBadge.textContent = "Fullt";
+    titleRow.appendChild(fullBadge);
+  }
+  body.appendChild(titleRow);
+
+  const meta = document.createElement("div");
+  meta.className = "oppgave-option-meta";
+  meta.textContent = `${formatDate(shift.date)} · ${formatTimeRange(shift)}`;
+  body.appendChild(meta);
+
+  if (shift.is_critical) {
+    const experience = document.createElement("div");
+    experience.className = "oppgave-experience";
+    experience.hidden = true;
+
+    const question = document.createElement("p");
+    question.className = "oppgave-experience-question";
+    question.textContent = "Har du relevant erfaring eller utdanning?";
+    experience.appendChild(question);
+
+    const yesLabel = document.createElement("label");
+    yesLabel.className = "oppgave-experience-option";
+    const yesRadio = document.createElement("input");
+    yesRadio.type = "radio";
+    yesRadio.name = `exp-${shift.id}`;
+    yesRadio.value = "yes";
+    yesLabel.append(yesRadio, " Ja");
+    experience.appendChild(yesLabel);
+
+    const noLabel = document.createElement("label");
+    noLabel.className = "oppgave-experience-option";
+    const noRadio = document.createElement("input");
+    noRadio.type = "radio";
+    noRadio.name = `exp-${shift.id}`;
+    noRadio.value = "no";
+    noLabel.append(noRadio, " Nei");
+    experience.appendChild(noLabel);
+
+    const notes = document.createElement("textarea");
+    notes.className = "oppgave-experience-notes";
+    notes.placeholder = "Fortell kort om erfaringen din (valgfritt)";
+    experience.appendChild(notes);
+
+    body.appendChild(experience);
+  }
+
+  label.appendChild(body);
+  return label;
 };
 
 const renderVakter = (shifts) => {
+  vakterEl.innerHTML = "";
+
   if (!shifts.length) {
-    vakterEl.innerHTML = '<p class="signup-empty">Ingen vakter er lagt ut ennå — sjekk tilbake snart.</p>';
+    const empty = document.createElement("p");
+    empty.className = "signup-empty";
+    empty.textContent = "Ingen vakter er lagt ut ennå — sjekk tilbake snart.";
+    vakterEl.appendChild(empty);
     return;
   }
 
@@ -96,18 +158,25 @@ const renderVakter = (shifts) => {
     groups.get(label).push(shift);
   });
 
-  vakterEl.innerHTML = VAKT_PHASES.map((p) => p.label)
+  VAKT_PHASES.map((p) => p.label)
     .concat(groups.has("Andre vakter") ? ["Andre vakter"] : [])
     .filter((label) => groups.has(label))
-    .map(
-      (label) => `
-        <div class="signup-vakt-group">
-          <h5 class="signup-vakt-group-title">${label}</h5>
-          <div class="signup-vakt-options">${groups.get(label).map(shiftOptionHTML).join("")}</div>
-        </div>
-      `
-    )
-    .join("");
+    .forEach((label) => {
+      const groupEl = document.createElement("div");
+      groupEl.className = "signup-vakt-group";
+
+      const heading = document.createElement("h5");
+      heading.className = "signup-vakt-group-title";
+      heading.textContent = label;
+      groupEl.appendChild(heading);
+
+      const optionsEl = document.createElement("div");
+      optionsEl.className = "signup-vakt-options";
+      groups.get(label).forEach((shift) => optionsEl.appendChild(shiftOptionEl(shift)));
+      groupEl.appendChild(optionsEl);
+
+      vakterEl.appendChild(groupEl);
+    });
 
   vakterEl.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
     checkbox.addEventListener("change", () => {
@@ -121,21 +190,28 @@ const renderVakter = (shifts) => {
 };
 
 const renderOppgaver = (skills) => {
-  if (!skills.length) {
-    oppgaverEl.innerHTML = "";
-    return;
-  }
-  oppgaverEl.innerHTML = skills
-    .map((skill) => {
-      const isFlexible = /^fleksibel\b/i.test(skill.name);
-      return `
-        <label class="oppgave-chip" ${isFlexible ? 'data-flexible="true"' : ""}>
-          <input type="checkbox" value="${skill.id}" ${isFlexible ? 'id="oppgave-flexible"' : ""}>
-          <span>${skill.name}</span>
-        </label>
-      `;
-    })
-    .join("");
+  oppgaverEl.innerHTML = "";
+  if (!skills.length) return;
+
+  skills.forEach((skill) => {
+    const isFlexible = /^fleksibel\b/i.test(skill.name);
+
+    const chip = document.createElement("label");
+    chip.className = "oppgave-chip";
+    if (isFlexible) chip.dataset.flexible = "true";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = skill.id;
+    if (isFlexible) checkbox.id = "oppgave-flexible";
+    chip.appendChild(checkbox);
+
+    const span = document.createElement("span");
+    span.textContent = skill.name;
+    chip.appendChild(span);
+
+    oppgaverEl.appendChild(chip);
+  });
 
   // Picking "Fleksibel" means you're happy to help wherever needed, so the
   // specific role choices below it stop being meaningful — grey them out
