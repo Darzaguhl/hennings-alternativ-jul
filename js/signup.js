@@ -254,7 +254,7 @@ formEl.addEventListener("submit", async (event) => {
     const failures = results.filter((r) => !r.ok).length;
 
     if (failures === 0) {
-      statusEl.textContent = "Takk for at du melder deg! Du får beskjed nærmere jul. Last ned appen for å se oppgavene dine.";
+      statusEl.textContent = "Takk for at du melder deg! Sjekk e-posten din for en lenke til å sette et passord, så kan du logge inn i appen og se oppgavene dine. Du får også beskjed nærmere jul.";
       formEl.reset();
       vakterEl.querySelectorAll(".oppgave-experience").forEach((panel) => (panel.hidden = true));
     } else if (failures < signups.length) {

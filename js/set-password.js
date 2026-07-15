@@ -6,6 +6,7 @@ const API_BASE_URL = window.API_BASE_URL;
 
 const introEl = document.getElementById("set-password-intro");
 const errorEl = document.getElementById("set-password-error");
+const openInAppEl = document.getElementById("open-in-app");
 const formEl = document.getElementById("set-password-form");
 const submitButton = document.getElementById("set-password-submit");
 const statusEl = document.getElementById("set-password-status");
@@ -41,6 +42,8 @@ const loadPreview = async () => {
     }
 
     introEl.textContent = `Sett et passord for ${data.email} — så kan du logge inn i appen.`;
+    openInAppEl.href = `henningsalternativjul://set-password?token=${encodeURIComponent(token)}`;
+    openInAppEl.style.display = "inline-flex";
     formEl.hidden = false;
   } catch (err) {
     console.error("Error loading password setup link", err);
@@ -77,6 +80,7 @@ formEl?.addEventListener("submit", async (event) => {
     }
 
     formEl.hidden = true;
+    openInAppEl.style.display = "none";
     introEl.hidden = false;
     introEl.textContent = "Passordet er satt! Du kan nå logge inn i appen med denne e-posten og passordet du nettopp valgte.";
   } catch (err) {
