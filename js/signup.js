@@ -56,6 +56,99 @@ const phaseForShift = (shift) => {
   return phase ? phase.label : "Andre vakter";
 };
 
+// Mirrors the backend's signup validation (ShiftViewSet.signup) so an
+// impossible combination greys out live as you check boxes, with a reason,
+// instead of only failing after you submit. Populated once the vakter/
+// oppgaver are rendered -- see renderVakter/renderOppgaver.
+let shiftsById = {};
+let orderedShiftIds = [];
+let skillsById = {};
+
+const shiftRange = (shift) => {
+  const start = new Date(`${shift.date}T${shift.start_time}`);
+  const endSameDay = new Date(`${shift.date}T${shift.end_time}`);
+  const end = endSameDay > start ? endSameDay : new Date(endSameDay.getTime() + 24 * 60 * 60 * 1000);
+  return [start, end];
+};
+
+const shiftsOverlap = (a, b) => {
+  const [aStart, aEnd] = shiftRange(a);
+  const [bStart, bEnd] = shiftRange(b);
+  return aStart < bEnd && bStart < aEnd;
+};
+
+const wouldCompleteThreeConsecutive = (candidateId, checkedIds) => {
+  const index = orderedShiftIds.indexOf(candidateId);
+  if (index === -1) return false;
+  const simulated = new Set(checkedIds);
+  simulated.add(candidateId);
+  for (const windowStart of [index - 2, index - 1, index]) {
+    if (windowStart < 0 || windowStart + 3 > orderedShiftIds.length) continue;
+    const window = orderedShiftIds.slice(windowStart, windowStart + 3);
+    if (window.every((id) => simulated.has(id))) return true;
+  }
+  return false;
+};
+
+// null = no restriction (matches the backend: a user with zero oppgaver
+// picked isn't blocked from any vakt).
+const allowedPhasesFromSkillIds = (checkedSkillIds) => {
+  if (checkedSkillIds.size === 0) return null;
+  const allowed = new Set();
+  checkedSkillIds.forEach((id) => {
+    const skill = skillsById[id];
+    if (!skill) return;
+    if (skill.allowed_in_setup) allowed.add("setup");
+    if (skill.allowed_in_guest) allowed.add("guest");
+    if (skill.allowed_in_teardown) allowed.add("teardown");
+  });
+  return allowed;
+};
+
+// Re-run on every vakt/oppgave checkbox change. Never disables a vakt the
+// visitor already checked -- only prevents adding a new one that would
+// conflict with the current selection, so nothing gets silently unchecked
+// out from under them.
+const updateVaktAvailability = () => {
+  const vaktCheckboxes = Array.from(vakterEl.querySelectorAll('input[type="checkbox"]'));
+  const checkedVaktIds = new Set(vaktCheckboxes.filter((cb) => cb.checked).map((cb) => cb.value));
+  const checkedSkillIds = new Set(
+    Array.from(oppgaverEl.querySelectorAll('input[type="checkbox"]:checked')).map((cb) => cb.value)
+  );
+  const allowedPhases = allowedPhasesFromSkillIds(checkedSkillIds);
+
+  vaktCheckboxes.forEach((checkbox) => {
+    const shift = shiftsById[checkbox.value];
+    if (!shift || shift.is_full) return;
+
+    const option = checkbox.closest(".oppgave-option");
+    const reasonEl = option.querySelector(".oppgave-option-reason");
+
+    if (checkbox.checked) {
+      checkbox.disabled = false;
+      option.classList.remove("oppgave-option-disabled");
+      if (reasonEl) reasonEl.hidden = true;
+      return;
+    }
+
+    let reason = null;
+    if ([...checkedVaktIds].some((id) => shiftsOverlap(shift, shiftsById[id]))) {
+      reason = "Overlapper med en valgt vakt.";
+    } else if (wouldCompleteThreeConsecutive(checkbox.value, checkedVaktIds)) {
+      reason = "Ville gitt tre vakter på rad.";
+    } else if (allowedPhases && shift.phase && !allowedPhases.has(shift.phase)) {
+      reason = "Ingen valgte oppgaver gjelder for denne vakten.";
+    }
+
+    checkbox.disabled = Boolean(reason);
+    option.classList.toggle("oppgave-option-disabled", Boolean(reason));
+    if (reasonEl) {
+      reasonEl.hidden = !reason;
+      reasonEl.textContent = reason || "";
+    }
+  });
+};
+
 // Builds real DOM nodes rather than an HTML string -- shift.title comes
 // from whoever has admin access on the event, and interpolating it into
 // innerHTML would make a compromised/phished admin account a stored-XSS
@@ -99,6 +192,11 @@ const shiftOptionEl = (shift) => {
   meta.className = "oppgave-option-meta";
   meta.textContent = `${formatDate(shift.date)} · ${formatTimeRange(shift)}`;
   body.appendChild(meta);
+
+  const reason = document.createElement("div");
+  reason.className = "oppgave-option-reason";
+  reason.hidden = true;
+  body.appendChild(reason);
 
   if (shift.is_critical) {
     const experience = document.createElement("div");
@@ -151,6 +249,18 @@ const renderVakter = (shifts) => {
     return;
   }
 
+  shiftsById = {};
+  shifts.forEach((shift) => {
+    shiftsById[shift.id] = shift;
+  });
+  // Matches the backend's ordering (Shift.Meta.ordering = date, start_time)
+  // -- computed client-side too rather than assumed from API response
+  // order, so wouldCompleteThreeConsecutive stays correct even if that
+  // ever changes.
+  orderedShiftIds = [...shifts]
+    .sort((a, b) => `${a.date}T${a.start_time}`.localeCompare(`${b.date}T${b.start_time}`))
+    .map((shift) => String(shift.id));
+
   const groups = new Map();
   shifts.forEach((shift) => {
     const label = phaseForShift(shift);
@@ -185,6 +295,7 @@ const renderVakter = (shifts) => {
       if (experiencePanel) {
         experiencePanel.hidden = !checkbox.checked;
       }
+      updateVaktAvailability();
     });
   });
 };
@@ -204,6 +315,11 @@ const phaseHint = (skill) => {
 const renderOppgaver = (skills) => {
   oppgaverEl.innerHTML = "";
   if (!skills.length) return;
+
+  skillsById = {};
+  skills.forEach((skill) => {
+    skillsById[skill.id] = skill;
+  });
 
   skills.forEach((skill) => {
     const isFlexible = /^fleksibel\b/i.test(skill.name);
@@ -232,6 +348,10 @@ const renderOppgaver = (skills) => {
     oppgaverEl.appendChild(chip);
   });
 
+  oppgaverEl.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+    checkbox.addEventListener("change", updateVaktAvailability);
+  });
+
   // Picking "Fleksibel" means you're happy to help wherever needed, so the
   // specific role choices below it stop being meaningful — grey them out
   // rather than leave a confusing mix of a flexible pick plus specifics.
@@ -247,6 +367,7 @@ const renderOppgaver = (skills) => {
         checkbox.disabled = flexibleBox.checked;
         chip.classList.toggle("oppgave-chip-disabled", flexibleBox.checked);
       });
+      updateVaktAvailability();
     });
   }
 };
@@ -365,6 +486,9 @@ formEl.addEventListener("submit", async (event) => {
       statusEl.textContent = "Takk for at du melder deg! Sjekk e-posten din for en lenke til å sette et passord, så kan du logge inn i appen og se oppgavene dine. Du får også beskjed nærmere jul.";
       formEl.reset();
       vakterEl.querySelectorAll(".oppgave-experience").forEach((panel) => (panel.hidden = true));
+      // reset() doesn't fire change events, so re-run explicitly -- otherwise
+      // vakter disabled by the just-submitted selection would stay disabled.
+      updateVaktAvailability();
     } else if (failures.length < signups.length) {
       statusEl.textContent = `Kontoen din ble opprettet, men ${failures.length} av ${signups.length} vakter kunne ikke registreres. ${reasons} Logg inn i appen for å velge på nytt.`;
     } else {
