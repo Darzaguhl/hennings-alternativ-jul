@@ -374,6 +374,11 @@ formEl.addEventListener("submit", async (event) => {
   }
 
   const email = document.getElementById("signup-email").value.trim();
+  const firstName = document.getElementById("signup-first-name").value.trim();
+  const lastName = document.getElementById("signup-last-name").value.trim();
+  const phone = document.getElementById("signup-phone").value.trim();
+  const address = document.getElementById("signup-address").value.trim();
+  const birthdate = document.getElementById("signup-birthdate").value;
 
   const signups = selectedSlotBoxes.map((checkbox) => {
     const slotId = checkbox.value;
@@ -399,13 +404,22 @@ formEl.addEventListener("submit", async (event) => {
     const registerResponse = await fetch(`${API_BASE_URL}/api/register/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        phone,
+        address,
+        birthdate,
+      }),
     });
     const registerBody = await registerResponse.json().catch(() => ({}));
 
     if (!registerResponse.ok) {
-      const detail = registerBody?.email?.[0] || registerBody?.detail;
-      throw new Error(detail || "Kunne ikke opprette bruker.");
+      const fieldError = ["email", "first_name", "last_name", "phone", "address", "birthdate"]
+        .map((field) => registerBody?.[field]?.[0])
+        .find(Boolean);
+      throw new Error(fieldError || registerBody?.detail || "Kunne ikke opprette bruker.");
     }
 
     const accessToken = registerBody.access;

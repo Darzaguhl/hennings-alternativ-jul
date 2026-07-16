@@ -95,11 +95,32 @@
       <form id="signup-form" hidden>
         <div id="signup-vakter" class="signup-vakt-groups"></div>
 
+        <h4 class="signup-subheading">Dine opplysninger</h4>
         <div class="signup-fields">
+          <div class="signup-field">
+            <label class="signup-label" for="signup-first-name">Fornavn</label>
+            <input class="signup-input" type="text" id="signup-first-name" required autocomplete="given-name">
+          </div>
+          <div class="signup-field">
+            <label class="signup-label" for="signup-last-name">Etternavn</label>
+            <input class="signup-input" type="text" id="signup-last-name" required autocomplete="family-name">
+          </div>
           <div class="signup-field">
             <label class="signup-label" for="signup-email">E-post</label>
             <input class="signup-input" type="email" id="signup-email" required autocomplete="email">
             <span class="signup-hint">Vi bruker denne til å holde deg oppdatert om vakten din.</span>
+          </div>
+          <div class="signup-field">
+            <label class="signup-label" for="signup-phone">Telefonnummer</label>
+            <input class="signup-input" type="tel" id="signup-phone" required autocomplete="tel">
+          </div>
+          <div class="signup-field">
+            <label class="signup-label" for="signup-address">Adresse</label>
+            <input class="signup-input" type="text" id="signup-address" required autocomplete="street-address" placeholder="Gate, postnummer og sted">
+          </div>
+          <div class="signup-field">
+            <label class="signup-label" for="signup-birthdate">Fødselsdato</label>
+            <input class="signup-input" type="date" id="signup-birthdate" required autocomplete="bday">
           </div>
         </div>
 
