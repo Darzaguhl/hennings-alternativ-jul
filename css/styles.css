@@ -553,8 +553,22 @@ section[id] {
   font-size: 1rem;
 }
 .signup-input:focus { outline: none; border-color: var(--gold-500); }
+.signup-textarea { resize: vertical; min-height: 80px; font-family: var(--font-body); }
 .signup-hint { font-size: 0.8rem; color: var(--ink-400); }
+.signup-required-legend { font-size: 0.8rem; color: var(--ink-400); margin: -2px 0 14px; }
 .signup-status { margin-top: 14px; font-size: 0.92rem; color: var(--green-700); font-weight: 500; }
+
+.login-toggle { margin-bottom: 24px; }
+.login-box {
+  margin-top: 14px;
+  padding: 18px;
+  background: var(--cream-50);
+  border: 1.5px solid var(--cream-200);
+  border-radius: var(--radius-md);
+}
+.login-box .signup-fields { margin-bottom: 14px; }
+
+.signup-x1 { margin-top: 8px; margin-bottom: 8px; }
 
 /* ========== Sponsors ========== */
 .sponsors { padding: 100px 0; background: var(--cream-100); }

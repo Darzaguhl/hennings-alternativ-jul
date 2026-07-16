@@ -88,6 +88,24 @@
       <h3>Meld deg på som frivillig</h3>
       <p class="signup-intro">Velg hvilke oppgaver du kan tenke deg på hvilke vakter. Du kan velge flere oppgaver på samme vakt, og du kan melde deg på flere vakter.</p>
 
+      <div class="login-toggle" id="login-toggle-wrap">
+        <button type="button" class="btn btn-text" id="login-toggle-btn">Har du meldt deg på før? Logg inn for å fylle ut automatisk</button>
+        <div class="login-box" id="login-box" hidden>
+          <div class="signup-fields">
+            <div class="signup-field">
+              <label class="signup-label" for="login-email">E-post</label>
+              <input class="signup-input" type="email" id="login-email" autocomplete="email">
+            </div>
+            <div class="signup-field">
+              <label class="signup-label" for="login-password">Passord</label>
+              <input class="signup-input" type="password" id="login-password" autocomplete="current-password">
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary" id="login-submit">Logg inn</button>
+          <p class="signup-status" id="login-status" role="status" aria-live="polite"></p>
+        </div>
+      </div>
+
       <div id="signup-loading" class="signup-loading">Laster vakter og oppgaver …</div>
       <p id="signup-error" class="signup-error" hidden></p>
       <p id="signup-closed" class="signup-closed" hidden></p>
@@ -95,32 +113,54 @@
       <form id="signup-form" hidden>
         <div id="signup-vakter" class="signup-vakt-groups"></div>
 
+        <div class="signup-x1" id="signup-x1">
+          <h4 class="signup-subheading">Vaktleder (X1)</h4>
+          <label class="oppgave-option oppgave-option-disabled" id="x1-option">
+            <input type="checkbox" id="signup-x1-checkbox" disabled>
+            <div class="oppgave-option-body">
+              <div class="oppgave-option-title">Jeg ønsker å være vaktleder (X1)</div>
+              <div class="oppgave-option-meta">Krever påmelding på minst tre andre vakter, hvorav minst to fra vakt 5–10.</div>
+              <div class="oppgave-option-reason" id="x1-reason">Velg minst tre vakter, hvorav to fra vakt 5–10.</div>
+            </div>
+          </label>
+        </div>
+
         <h4 class="signup-subheading">Dine opplysninger</h4>
+        <p class="signup-required-legend">* Påkrevd felt</p>
+        <p class="signup-hint" id="signup-participation-years" hidden></p>
         <div class="signup-fields">
           <div class="signup-field">
-            <label class="signup-label" for="signup-first-name">Fornavn</label>
+            <label class="signup-label" for="signup-first-name">Fornavn *</label>
             <input class="signup-input" type="text" id="signup-first-name" required autocomplete="given-name">
           </div>
           <div class="signup-field">
-            <label class="signup-label" for="signup-last-name">Etternavn</label>
+            <label class="signup-label" for="signup-last-name">Etternavn *</label>
             <input class="signup-input" type="text" id="signup-last-name" required autocomplete="family-name">
           </div>
           <div class="signup-field">
-            <label class="signup-label" for="signup-email">E-post</label>
+            <label class="signup-label" for="signup-email">E-post *</label>
             <input class="signup-input" type="email" id="signup-email" required autocomplete="email">
             <span class="signup-hint">Vi bruker denne til å holde deg oppdatert om vakten din.</span>
           </div>
           <div class="signup-field">
-            <label class="signup-label" for="signup-phone">Telefonnummer</label>
+            <label class="signup-label" for="signup-phone">Telefonnummer *</label>
             <input class="signup-input" type="tel" id="signup-phone" required autocomplete="tel">
           </div>
           <div class="signup-field">
-            <label class="signup-label" for="signup-address">Adresse</label>
+            <label class="signup-label" for="signup-address">Adresse *</label>
             <input class="signup-input" type="text" id="signup-address" required autocomplete="street-address" placeholder="Gate, postnummer og sted">
           </div>
           <div class="signup-field">
-            <label class="signup-label" for="signup-birthdate">Fødselsdato</label>
+            <label class="signup-label" for="signup-birthdate">Fødselsdato *</label>
             <input class="signup-input" type="date" id="signup-birthdate" required autocomplete="bday">
+          </div>
+          <div class="signup-field">
+            <label class="signup-label" for="signup-qualifications">Kvalifikasjoner</label>
+            <textarea class="signup-input signup-textarea" id="signup-qualifications" placeholder="Relevant erfaring, utdanning eller sertifiseringer (valgfritt)"></textarea>
+          </div>
+          <div class="signup-field">
+            <label class="signup-label" for="signup-about">Fortell litt om deg selv</label>
+            <textarea class="signup-input signup-textarea" id="signup-about" placeholder="Valgfritt"></textarea>
           </div>
         </div>
 

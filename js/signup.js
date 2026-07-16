@@ -19,6 +19,28 @@ const vakterEl = document.getElementById("signup-vakter");
 const submitButton = document.getElementById("signup-submit");
 const statusEl = document.getElementById("signup-status");
 
+const loginToggleBtn = document.getElementById("login-toggle-btn");
+const loginBox = document.getElementById("login-box");
+const loginEmailInput = document.getElementById("login-email");
+const loginPasswordInput = document.getElementById("login-password");
+const loginSubmitBtn = document.getElementById("login-submit");
+const loginStatusEl = document.getElementById("login-status");
+const participationYearsEl = document.getElementById("signup-participation-years");
+
+const x1Checkbox = document.getElementById("signup-x1-checkbox");
+const x1Option = document.getElementById("x1-option");
+const x1ReasonEl = document.getElementById("x1-reason");
+
+// Set once a returning volunteer logs in (see the login handler below) --
+// in-memory only, never persisted to localStorage/sessionStorage, since
+// this is a one-shot form-fill page rather than a maintained session.
+// currentEventId is captured from loadEvent() so the X1 signup POST (which
+// needs an event id, not just the shift ids) has something to send.
+let isLoggedIn = false;
+let authAccessToken = null;
+let loggedInUserId = null;
+let currentEventId = null;
+
 const formatOpenDate = (isoString) =>
   new Date(isoString).toLocaleDateString("no-NO", { day: "numeric", month: "long", year: "numeric" });
 
@@ -145,6 +167,30 @@ const updateVaktAvailability = () => {
       }
     });
   });
+
+  updateX1Eligibility(checkedShiftIds);
+};
+
+// Mirrors X1SignupViewSet.perform_create's eligibility check (>=3 distinct
+// vakter total, >=2 of them with vakt_number 5-10) so the checkbox greys
+// out live instead of only failing at submit. If the visitor unchecks
+// vakter after having checked this box, it's force-unchecked rather than
+// left in a stale, now-invalid state.
+const updateX1Eligibility = (checkedShiftIds) => {
+  const totalCount = checkedShiftIds.size;
+  const rangeCount = [...checkedShiftIds].filter((id) => {
+    const shift = shiftsById[id];
+    return shift && shift.vakt_number != null && shift.vakt_number >= 5 && shift.vakt_number <= 10;
+  }).length;
+  const eligible = totalCount >= 3 && rangeCount >= 2;
+
+  if (!eligible) x1Checkbox.checked = false;
+  x1Checkbox.disabled = !eligible;
+  x1Option.classList.toggle("oppgave-option-disabled", !eligible);
+  x1ReasonEl.hidden = eligible;
+  x1ReasonEl.textContent = eligible
+    ? ""
+    : `Krever minst 3 vakter totalt og minst 2 fra vakt 5–10 — du har ${totalCount} av 3, ${rangeCount} av 2.`;
 };
 
 // Builds real DOM nodes rather than an HTML string -- shift.title/skill_name
@@ -334,6 +380,10 @@ const renderVakter = (shifts, oppgaveSlots) => {
       updateVaktAvailability();
     });
   });
+
+  // Replaces the static placeholder hint in the HTML with the real
+  // (0 of 3, 0 of 2) count now that shiftsById is populated.
+  updateVaktAvailability();
 };
 
 const loadEvent = async () => {
@@ -350,6 +400,7 @@ const loadEvent = async () => {
       return;
     }
 
+    currentEventId = event.id;
     conflictPairs = (event.conflicts || []).map((c) => [String(c.shift_a), String(c.shift_b)]);
     renderVakter(event.shifts || [], event.oppgave_slots || []);
     formEl.hidden = false;
@@ -362,6 +413,74 @@ const loadEvent = async () => {
 };
 
 loadEvent();
+
+loginToggleBtn.addEventListener("click", () => {
+  loginBox.hidden = !loginBox.hidden;
+});
+
+loginSubmitBtn.addEventListener("click", async () => {
+  loginStatusEl.textContent = "";
+  const email = loginEmailInput.value.trim();
+  const password = loginPasswordInput.value;
+  if (!email || !password) {
+    loginStatusEl.textContent = "Fyll ut e-post og passord.";
+    return;
+  }
+
+  loginSubmitBtn.disabled = true;
+  loginSubmitBtn.textContent = "Logger inn …";
+
+  try {
+    const tokenResponse = await fetch(`${API_BASE_URL}/api/token/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!tokenResponse.ok) throw new Error("Feil e-post eller passord.");
+    const tokenBody = await tokenResponse.json();
+    authAccessToken = tokenBody.access;
+
+    const meResponse = await fetch(`${API_BASE_URL}/api/users/me/`, {
+      headers: { Authorization: `Bearer ${authAccessToken}` },
+    });
+    if (!meResponse.ok) throw new Error("Kunne ikke hente brukeropplysningene dine.");
+    const me = await meResponse.json();
+
+    isLoggedIn = true;
+    loggedInUserId = me.id;
+
+    document.getElementById("signup-first-name").value = me.first_name || "";
+    document.getElementById("signup-last-name").value = me.last_name || "";
+    const emailField = document.getElementById("signup-email");
+    emailField.value = me.email || "";
+    // Email-change isn't part of this feature, and PATCHing it could desync
+    // `username` (set equal to email only at registration) -- lock it once
+    // we know who's logged in.
+    emailField.disabled = true;
+    document.getElementById("signup-phone").value = me.phone || "";
+    document.getElementById("signup-address").value = me.address || "";
+    document.getElementById("signup-birthdate").value = me.birthdate || "";
+    document.getElementById("signup-qualifications").value = me.experience_notes || "";
+    document.getElementById("signup-about").value = me.about || "";
+
+    if (me.participation_years && me.participation_years.length) {
+      participationYearsEl.textContent = `Du har tidligere vært med i: ${me.participation_years.join(", ")}.`;
+      participationYearsEl.hidden = false;
+    }
+
+    loginStatusEl.textContent = `Logget inn som ${me.email}. Opplysningene dine er fylt ut under.`;
+    loginBox.hidden = true;
+  } catch (err) {
+    console.error("Error logging in", err);
+    isLoggedIn = false;
+    authAccessToken = null;
+    loggedInUserId = null;
+    loginStatusEl.textContent = err.message || "Kunne ikke logge inn.";
+  } finally {
+    loginSubmitBtn.disabled = false;
+    loginSubmitBtn.textContent = "Logg inn";
+  }
+});
 
 formEl.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -379,6 +498,9 @@ formEl.addEventListener("submit", async (event) => {
   const phone = document.getElementById("signup-phone").value.trim();
   const address = document.getElementById("signup-address").value.trim();
   const birthdate = document.getElementById("signup-birthdate").value;
+  const qualifications = document.getElementById("signup-qualifications").value.trim();
+  const about = document.getElementById("signup-about").value.trim();
+  const wantsX1 = x1Checkbox.checked && !x1Checkbox.disabled;
 
   const signups = selectedSlotBoxes.map((checkbox) => {
     const slotId = checkbox.value;
@@ -400,29 +522,62 @@ formEl.addEventListener("submit", async (event) => {
   submitButton.disabled = true;
   submitButton.textContent = "Sender …";
 
+  const fieldErrorKeys = ["email", "first_name", "last_name", "phone", "address", "birthdate", "experience_notes", "about"];
+
   try {
-    const registerResponse = await fetch(`${API_BASE_URL}/api/register/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        first_name: firstName,
-        last_name: lastName,
-        phone,
-        address,
-        birthdate,
-      }),
-    });
-    const registerBody = await registerResponse.json().catch(() => ({}));
+    let accessToken;
 
-    if (!registerResponse.ok) {
-      const fieldError = ["email", "first_name", "last_name", "phone", "address", "birthdate"]
-        .map((field) => registerBody?.[field]?.[0])
-        .find(Boolean);
-      throw new Error(fieldError || registerBody?.detail || "Kunne ikke opprette bruker.");
+    if (isLoggedIn) {
+      // Returning volunteer: update their real profile instead of creating
+      // a duplicate-feeling anonymous account.
+      const patchResponse = await fetch(`${API_BASE_URL}/api/users/${loggedInUserId}/`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authAccessToken}`,
+        },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          phone,
+          address,
+          birthdate,
+          experience_notes: qualifications,
+          about,
+        }),
+      });
+      const patchBody = await patchResponse.json().catch(() => ({}));
+
+      if (!patchResponse.ok) {
+        const fieldError = fieldErrorKeys.map((field) => patchBody?.[field]?.[0]).find(Boolean);
+        throw new Error(fieldError || patchBody?.detail || "Kunne ikke oppdatere opplysningene dine.");
+      }
+
+      accessToken = authAccessToken;
+    } else {
+      const registerResponse = await fetch(`${API_BASE_URL}/api/register/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          phone,
+          address,
+          birthdate,
+          experience_notes: qualifications,
+          about,
+        }),
+      });
+      const registerBody = await registerResponse.json().catch(() => ({}));
+
+      if (!registerResponse.ok) {
+        const fieldError = fieldErrorKeys.map((field) => registerBody?.[field]?.[0]).find(Boolean);
+        throw new Error(fieldError || registerBody?.detail || "Kunne ikke opprette bruker.");
+      }
+
+      accessToken = registerBody.access;
     }
-
-    const accessToken = registerBody.access;
 
     // Sequential, not Promise.all: the backend rejects a vakt that would
     // overlap or complete a run of 3 consecutive vakter *already signed up
@@ -449,20 +604,62 @@ formEl.addEventListener("submit", async (event) => {
       }
     }
 
+    // X1 is opt-in on top of the vakt signups above -- its own failure
+    // (most likely the eligibility check re-run server-side) shouldn't be
+    // conflated with a slot-signup failure, so it's tracked separately and
+    // folded into the status message below.
+    let x1Detail = null;
+    let x1Failed = false;
+    if (wantsX1) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/x1-signups/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ event: currentEventId }),
+        });
+        const resBody = await res.json().catch(() => ({}));
+        x1Failed = !res.ok;
+        // A ValidationError raised with a plain string (see
+        // X1SignupViewSet.perform_create) serializes as a bare JSON array,
+        // not `{detail: ...}` -- handle both shapes.
+        x1Detail = Array.isArray(resBody) ? resBody[0] : resBody?.detail;
+      } catch (err) {
+        x1Failed = true;
+      }
+    }
+
     const failures = signupResults.filter((r) => !r.ok);
     const reasons = failures.map((f) => f.detail).filter(Boolean).join(" ");
+    const x1Reason = x1Failed ? x1Detail || "Vaktleder (X1)-påmeldingen kunne ikke registreres." : "";
 
-    if (failures.length === 0) {
-      statusEl.textContent = "Takk for at du melder deg! Sjekk e-posten din for en lenke til å sette et passord, så kan du logge inn i appen og se oppgavene dine. Du får også beskjed nærmere jul.";
+    if (failures.length === 0 && !x1Failed) {
+      statusEl.textContent = isLoggedIn
+        ? "Takk! Opplysningene og påmeldingen din er oppdatert."
+        : "Takk for at du melder deg! Sjekk e-posten din for en lenke til å sette et passord, så kan du logge inn i appen og se oppgavene dine. Du får også beskjed nærmere jul.";
       formEl.reset();
       vakterEl.querySelectorAll(".oppgave-experience").forEach((panel) => (panel.hidden = true));
+      // reset() restores values but not the disabled attribute we set on
+      // login, and clears the email value along with everything else --
+      // put it back so a still-logged-in visitor doesn't see a blank,
+      // disabled email field if they sign up for something else.
+      if (isLoggedIn) document.getElementById("signup-email").value = email;
       // reset() doesn't fire change events, so re-run explicitly -- otherwise
       // vakter disabled by the just-submitted selection would stay disabled.
       updateVaktAvailability();
+    } else if (isLoggedIn) {
+      const parts = [];
+      if (failures.length) parts.push(`${failures.length} av ${signups.length} oppgaver kunne ikke registreres. ${reasons}`);
+      if (x1Reason) parts.push(x1Reason);
+      statusEl.textContent = `Opplysningene dine ble oppdatert, men ${parts.join(" ")}`;
     } else if (failures.length < signups.length) {
-      statusEl.textContent = `Kontoen din ble opprettet, men ${failures.length} av ${signups.length} oppgaver kunne ikke registreres. ${reasons} Logg inn i appen for å velge på nytt.`;
+      const parts = [`${failures.length} av ${signups.length} oppgaver kunne ikke registreres. ${reasons}`];
+      if (x1Reason) parts.push(x1Reason);
+      statusEl.textContent = `Kontoen din ble opprettet, men ${parts.join(" ")} Logg inn i appen for å velge på nytt.`;
     } else {
-      statusEl.textContent = `Kontoen din ble opprettet, men oppgavene kunne ikke registreres. ${reasons} Logg inn i appen for å velge oppgaver.`;
+      statusEl.textContent = `Kontoen din ble opprettet, men oppgavene kunne ikke registreres. ${reasons} ${x1Reason} Logg inn i appen for å velge oppgaver.`;
     }
   } catch (err) {
     console.error("Error signing up", err);
