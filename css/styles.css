@@ -466,31 +466,23 @@ section[id] {
   color: var(--gold-600);
   margin-bottom: 10px;
 }
-.signup-vakt-options { display: grid; gap: 12px; }
+.signup-vakt-options { display: grid; gap: 16px; }
 
-.signup-oppgave-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 8px 12px;
-  margin-bottom: 28px;
-}
-.oppgave-chip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+.signup-shift-group {
   border: 1.5px solid var(--cream-200);
   border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: 0.9rem;
-  color: var(--ink-700);
-  transition: border-color 0.15s ease, background 0.15s ease;
+  padding: 14px 16px;
 }
-.oppgave-chip:hover { border-color: var(--gold-500); background: var(--cream-50); }
-.oppgave-chip input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--green-700); flex-shrink: 0; }
-.oppgave-chip-disabled { opacity: 0.45; cursor: not-allowed; }
-.oppgave-chip-hint { font-size: 0.82rem; color: var(--ink-600); }
-.oppgave-chip-disabled:hover { border-color: var(--cream-200); background: none; }
+.signup-shift-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.signup-shift-title { font-weight: 700; color: var(--green-900); }
+.signup-shift-meta { font-size: 0.88rem; color: var(--ink-600); }
+.signup-shift-slots { display: grid; gap: 10px; }
 
 .oppgave-option {
   display: flex;
